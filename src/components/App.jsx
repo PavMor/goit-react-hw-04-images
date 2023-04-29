@@ -1,5 +1,5 @@
-import { Component } from 'react';
-import { ToastContainer } from 'react-toastify';
+import { useState, useEffect } from 'react';
+import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { fetchImages } from 'services/images-api';
 import { Searchbar } from './Searchbar/Searchbar';
@@ -9,137 +9,100 @@ import { Loader } from './Loader/Loader';
 import { Modal } from './Modal/Modal';
 import { AppContainer } from './App.styled';
 
-export const App = class App extends Component {
-  state = {
-    query: '',
-    page: 1,
-    imagesOnPage: 0,
-    totalImages: 0,
-    isLoading: false,
-    showModal: false,
-    images: null,
-    error: null,
-    currentImageUrl: null,
-    currentImageDescription: null,
-  };
+export default function App() {
+  const [query, setQuery] = useState('');
+  const [page, setPage] = useState(1);
+  const [imagesOnPage, setImagesOnPage] = useState(0);
+  const [totalImages, setTotalImages] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [images, setImages] = useState(null);
+  // const [error, setError] = useState(null);
+  const [currentImageUrl, setCurrentImageUrl] = useState(null);
+  const [currentImageDescription, setCurrentImageDescription] = useState(null);
 
-  componentDidUpdate(prevProps, prevState) {
-    const { query, page } = this.state;
-
-    if (prevState.query !== query) {
-      this.setState(({ isLoading }) => ({ isLoading: !isLoading }));
-
-      fetchImages(query)
-        .then(({ hits, totalHits }) => {
-          const imagesArray = hits.map(hit => ({
+ 
+  useEffect(() => {
+    if (query === '') {
+      return;
+    }
+   
+    setIsLoading(true);
+    fetchImages(query, page)
+      .then(res => {
+        const imagesArray = res.hits.map(hit => {
+          return {
             id: hit.id,
             description: hit.tags,
             smallImage: hit.webformatURL,
             largeImage: hit.largeImageURL,
-          }));
+          };
+        });
+        setImages(prev => [...prev, ...imagesArray]);
+        setImagesOnPage(prev => prev + imagesArray.length);
+        setTotalImages(res.totalHits);
+        if (res.totalHits === 0) {
+          setIsLoading(false);
+          throw new toast.error('Change the name and try again!');
+        }
+      })
+      .catch(error => {
+        
+        toast.error('Something went wrong!');
+        
+        setIsLoading(false);
+      })
+      .finally(() => setIsLoading(prev => !prev));
+  }, [query, page]);
 
-          return this.setState({
-            page: 1,
-            images: imagesArray,
-            imagesOnPage: imagesArray.length,
-            totalImages: totalHits,
-          });
-        })
-        .catch(error => this.setState({ error }))
-        .finally(() =>
-          this.setState(({ isLoading }) => ({ isLoading: !isLoading }))
-        );
-    }
-
-    if (prevState.page !== page && page !== 1) {
-      this.setState(({ isLoading }) => ({ isLoading: !isLoading }));
-
-      fetchImages(query, page)
-        .then(({ hits }) => {
-          const imagesArray = hits.map(hit => ({
-            id: hit.id,
-            description: hit.tags,
-            smallImage: hit.webformatURL,
-            largeImage: hit.largeImageURL,
-          }));
-
-          return this.setState(({ images, imagesOnPage }) => {
-            return {
-              images: [...images, ...imagesArray],
-              imagesOnPage: imagesOnPage + imagesArray.length,
-            };
-          });
-        })
-        .catch(error => this.setState({ error }))
-        .finally(() =>
-          this.setState(({ isLoading }) => ({ isLoading: !isLoading }))
-        );
-    }
-  }
-
-  getSearchRequest = query => {
-    this.setState({ query });
+  const getSearchRequest = query => {
+    setQuery(query);
+    setImages([]);
+    setPage(1);
   };
 
-  onNextFetch = () => {
-    this.setState(({ page }) => ({ page: page + 1 }));
+  const onNextFetch = () => {
+    setPage(state => state + 1);
   };
 
-  toggleModal = () => {
-    this.setState(({ showModal }) => ({ showModal: !showModal }));
+  const toggleModal = () => {
+    setShowModal(state => !state);
   };
-
-  openModal = e => {
+  
+  const openModal = e => {
     const currentImageUrl = e.target.dataset.large;
     const currentImageDescription = e.target.alt;
 
     if (e.target.nodeName === 'IMG') {
-      this.setState(({ showModal }) => ({
-        showModal: !showModal,
-        currentImageUrl: currentImageUrl,
-        currentImageDescription: currentImageDescription,
-      }));
+      return (
+        setShowModal(!showModal),
+        setCurrentImageUrl(currentImageUrl),
+        setCurrentImageDescription(currentImageDescription)
+      );
     }
   };
 
-  render() {
-    const {
-      images,
-      imagesOnPage,
-      totalImages,
-      isLoading,
-      showModal,
-      currentImageUrl,
-      currentImageDescription,
-    } = this.state;
+  return (
+    <AppContainer>
+      <Searchbar onSubmit={getSearchRequest} />
 
-    const getSearchRequest = this.getSearchRequest;
-    const onNextFetch = this.onNextFetch;
-    const openModal = this.openModal;
-    const toggleModal = this.toggleModal;
+      {images && <ImageGallery images={images} openModal={openModal} />}
 
-    return (
-      <AppContainer>
-        <Searchbar onSubmit={getSearchRequest} />
+      {isLoading && <Loader />}
 
-        {images && <ImageGallery images={images} openModal={openModal} />}
+      {imagesOnPage >= 12 && imagesOnPage < totalImages && (
+        <Button onNextFetch={onNextFetch} />
+      )}
 
-        {isLoading && <Loader />}
+      {showModal && (
+        <Modal
+          onClose={toggleModal}
+          currentImageUrl={currentImageUrl}
+          currentImageDescription={currentImageDescription}
+        />
+      )}
 
-        {imagesOnPage >= 12 && imagesOnPage < totalImages && (
-          <Button onNextFetch={onNextFetch} />
-        )}
-
-        {showModal && (
-          <Modal
-            onClose={toggleModal}
-            currentImageUrl={currentImageUrl}
-            currentImageDescription={currentImageDescription}
-          />
-        )}
-
-        <ToastContainer />
-      </AppContainer>
-    );
-  }
+      <ToastContainer/>
+    </AppContainer>
+  );
 }
