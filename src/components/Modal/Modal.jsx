@@ -1,41 +1,60 @@
-import React, { useEffect } from 'react';
 import PropTypes from 'prop-types';
-import s from './Modal.module.css';
+import { Component } from 'react';
+import { createPortal } from 'react-dom';
+import { BsXLg } from 'react-icons/bs';
+import { Backdrop, ModalContainer, Wrapper, Title, Button } from './Modal.styled';
 
-export function Modal({ onCloseModal, children }) {
-  useEffect(() => {
-    const handleKeydownModal = e => {
-      if (e.code === 'Escape') {
-        onCloseModal();
-      }
+const modalRoot = document.querySelector('#modal-root');
+
+export const Modal = class Modal extends Component {
+    static propTypes = {
+        title: PropTypes.string,
+        onClose: PropTypes.func.isRequired,
+        currentImageUrl: PropTypes.string,
+        currentImageDescription: PropTypes.string,
     };
-    window.addEventListener('keydown', handleKeydownModal);
 
-    return () => window.removeEventListener('keydown', handleKeydownModal);
-  }, [onCloseModal]);
-
-  const handleCloseModal = e => {
-    if (e.target === e.currentTarget) {
-      onCloseModal();
+    componentDidMount() {
+        window.addEventListener('keydown', this.handleKeyDown);
     }
-  };
 
-  return (
-    <div className={s.Overlay} onClick={handleCloseModal}>
-      <div className={s.Modal}>
-        {children}
-        <button type="button" className={s.Button} onClick={handleCloseModal}>
-          Close
-        </button>
-      </div>
-    </div>
-  );
+    componentWillUnmount() {
+        window.removeEventListener('keydown', this.handleKeyDown);
+    }
+
+    handleClickBackdrop = e => {
+        if (e.target === e.currentTarget) {
+        this.props.onClose();
+        }
+    };
+
+    handleKeyDown = e => {
+        if (e.code === 'Escape') {
+        this.props.onClose();
+        }
+    };
+
+    render() {
+        const { title, onClose, currentImageUrl, currentImageDescription } =
+        this.props;
+
+        return createPortal(
+            <Backdrop onClick={this.handleClickBackdrop}>
+                <ModalContainer>
+                <Wrapper>
+                    {title && <Title>{title}</Title>}
+                    <Button type="button" onClick={onClose}>
+                    <BsXLg /* className={css.icon} */ />
+                    </Button>
+                </Wrapper>
+                <img
+                    src={currentImageUrl}
+                    alt={currentImageDescription}
+                    loading="lazy"
+                />
+                </ModalContainer>
+            </Backdrop>,
+            modalRoot
+        );
+    }
 }
-
-Modal.propTypes = {
-  onCloseModal: PropTypes.func.isRequired,
-  children: PropTypes.oneOfType([
-    PropTypes.arrayOf(PropTypes.node),
-    PropTypes.node,
-  ]).isRequired,
-};

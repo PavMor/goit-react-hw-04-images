@@ -1,14 +1,14 @@
-import React from 'react';
 import PropTypes from 'prop-types';
+import { LoadButton } from './Button.styled';
 
-import s from './Button.module.css';
-
-export function Button({ onClick }) {
+export const Button = ({ onNextFetch }) => {
   return (
-    <button type="button" className={s.Button} onClick={onClick}>
-      Load more
-    </button>
+    <LoadButton type="button" onClick={onNextFetch}>
+      Load more 
+    </LoadButton>
   );
 }
 
-Button.propTypes = { onClick: PropTypes.func.isRequired };
+Button.propTypes = {
+  onNextFetch: PropTypes.func.isRequired,
+};

@@ -1,16 +1,10 @@
-import { ThreeDots } from 'react-loader-spinner';
+import { MdOutlineCameraswitch } from 'react-icons/md';
+import { Wrapper } from './Loader.styled';
 
-export function Loader() {
+export const Loader = () => {
   return (
-    <ThreeDots
-      height="100"
-      width="100"
-      radius="9"
-      color="#3f51b5"
-      ariaLabel="three-dots-loading"
-      wrapperStyle={{ margin: 'auto' }}
-      wrapperClassName=""
-      visible={true}
-    />
+    <Wrapper>
+      <MdOutlineCameraswitch size={56} />
+    </Wrapper>
   );
 }
