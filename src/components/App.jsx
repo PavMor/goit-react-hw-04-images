@@ -9,7 +9,7 @@ import { Loader } from './Loader/Loader';
 import { Modal } from './Modal/Modal';
 import { AppContainer } from './App.styled';
 
-export default function App() {
+export const App = function App() {
   const [query, setQuery] = useState('');
   const [page, setPage] = useState(1);
   const [imagesOnPage, setImagesOnPage] = useState(0);
